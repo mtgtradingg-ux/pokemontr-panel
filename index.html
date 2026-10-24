@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Publicado tal cual en mtgtradingg-ux.github.io/pokemontr-panel: que no salga en buscadores. -->
+<meta name="robots" content="noindex, nofollow">
+<title>Panel de uso · pokemontr</title>
+<style>
+  :root {
+    --bg: #f6f6f3;
+    --card: #ffffff;
+    --soft: #f0efeb;
+    --text: #141413;
+    --muted: #5f5e5a;
+    --faint: #94928b;
+    --line: #e6e4dd;
+    --accent: #6b5fd3;
+    --accent-soft: #eeedfe;
+    --ios: #1d9e75;
+    --android: #d85a30;
+    --up: #2f7d12;
+    --down: #b3261e;
+    --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111110; --card: #1b1b1a; --soft: #252523; --text: #f4f3ee; --muted: #b9b7ae;
+      --faint: #85837c; --line: #2d2d2b; --accent: #9d94f0; --accent-soft: #2a2650;
+      --ios: #3cc495; --android: #f0845a; --up: #7fcf5a; --down: #f28b82;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 var(--font); -webkit-font-smoothing: antialiased; }
+  button { font: inherit; color: inherit; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 28px 20px 64px; }
+
+  /* ── Login ─────────────────────────────────────────────────────────────── */
+  #loginGate { max-width: 360px; margin: 14vh auto 0; padding: 28px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; }
+  #loginGate h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  #loginGate p { color: var(--muted); margin: 0 0 18px; font-size: 13px; }
+  #loginGate label { display: block; font-size: 12px; color: var(--muted); margin: 12px 0 5px; }
+  #loginGate input { width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); color: var(--text); font: inherit; }
+  #loginGate input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  #loginBtn { width: 100%; margin-top: 20px; padding: 11px; border: none; border-radius: 10px; background: var(--text); color: var(--bg); font-weight: 600; cursor: pointer; }
+  #loginBtn:disabled { opacity: .6; cursor: default; }
+  #loginError { margin-top: 12px; font-size: 13px; color: var(--down); display: none; }
+
+  /* ── Cabecera ──────────────────────────────────────────────────────────── */
+  #dashboard { display: none; }
+  .top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 22px; }
+  .top h1 { font-size: 22px; font-weight: 600; margin: 0; letter-spacing: -.01em; }
+  .live { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted); margin-top: 4px; }
+  .live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--up); box-shadow: 0 0 0 3px color-mix(in srgb, var(--up) 20%, transparent); }
+  .controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .pills { display: flex; gap: 4px; padding: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; flex-wrap: wrap; }
+  .pill { border: none; background: none; padding: 6px 13px; border-radius: 999px; font-size: 13px; color: var(--muted); cursor: pointer; }
+  .pill:hover { color: var(--text); }
+  .pill.on { background: var(--text); color: var(--bg); }
+  .pill:focus-visible, .seg:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .ghost { border: 1px solid var(--line); background: var(--card); color: var(--muted); border-radius: 999px; padding: 7px 13px; font-size: 12.5px; cursor: pointer; }
+  .ghost:hover { color: var(--text); }
+  .range-note { font-size: 12px; color: var(--faint); margin: -12px 0 18px; }
+
+  /* ── KPIs ──────────────────────────────────────────────────────────────── */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; margin-bottom: 14px; }
+  .kpi { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+  .kpi .l { font-size: 12.5px; color: var(--muted); }
+  .kpi .v { font-size: 28px; font-weight: 600; letter-spacing: -.02em; margin: 2px 0 1px; font-variant-numeric: tabular-nums; }
+  .kpi .d { font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; }
+  .kpi .d.up { color: var(--up); } .kpi .d.down { color: var(--down); }
+
+  /* ── Tarjetas ──────────────────────────────────────────────────────────── */
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; min-width: 0; }
+  .card h2 { font-size: 14px; font-weight: 600; margin: 0; }
+  .card .sub { font-size: 12px; color: var(--faint); margin: 2px 0 12px; }
+  .card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin-top: 14px; }
+  .section-title { font-size: 13px; font-weight: 600; color: var(--muted); margin: 30px 0 0; }
+  .section-title span { font-weight: 400; color: var(--faint); }
+  .empty { color: var(--faint); font-size: 13px; padding: 8px 0; }
+
+  .segs { display: flex; gap: 2px; background: var(--soft); border-radius: 9px; padding: 3px; }
+  .seg { border: none; background: none; padding: 4px 10px; white-space: nowrap; border-radius: 7px; font-size: 12px; color: var(--muted); cursor: pointer; }
+  .seg.on { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+
+  /* Gráfico principal */
+  #trend { width: 100%; height: 220px; display: block; margin-top: 10px; }
+  #trend .hit { fill: transparent; cursor: pointer; }
+  #trend .hit:hover + .dot, #trend .hit:focus + .dot { opacity: 1; }
+  #trend .dot { opacity: 0; transition: opacity .1s; }
+  .readout { margin-top: 8px; font-size: 12.5px; color: var(--muted); min-height: 19px; font-variant-numeric: tabular-nums; }
+  .readout b { color: var(--text); font-weight: 600; }
+
+  /* Barras horizontales */
+  /* Una sola cuadrícula para todas las filas: así las barras empiezan y acaban igual. */
+  .rows { display: grid; grid-template-columns: minmax(0, max-content) minmax(60px, 1fr) auto auto; gap: 9px 10px; align-items: center; }
+  .rows > .empty { grid-column: 1 / -1; }
+  .row { display: contents; font-size: 13px; }
+  .row .n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 150px; font-size: 13px; }
+  .row .x { font-size: 12px; color: var(--faint); font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+  .row .t { height: 8px; background: var(--soft); border-radius: 4px; overflow: hidden; }
+  .row .t i { display: block; height: 100%; border-radius: 4px; background: var(--accent); min-width: 3px; }
+  .row .v { color: var(--muted); font-variant-numeric: tabular-nums; font-size: 12.5px; text-align: right; min-width: 34px; }
+  .row .v small { color: var(--faint); }
+
+  /* Barras verticales (horas, retención) */
+  .cols { display: flex; align-items: flex-end; gap: 3px; height: 130px; padding-top: 16px; }
+  .col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; min-width: 0; cursor: pointer; }
+  .col .bar { width: 100%; border-radius: 3px 3px 0 0; background: var(--accent); min-height: 2px; }
+  .col .lab { font-size: 10px; color: var(--faint); margin-top: 5px; white-space: nowrap; }
+  .col .val { font-size: 10px; color: var(--muted); margin-bottom: 3px; font-variant-numeric: tabular-nums; }
+  .col:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* Horas del día: 24 columnas a todo el ancho, las horas punta resaltadas */
+  .card.wide { grid-column: 1 / -1; }
+  .hours { display: grid; grid-template-columns: repeat(24, minmax(0, 1fr)); gap: 4px; align-items: end; height: 190px; margin-top: 6px; }
+  .hcol { display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; height: 100%; cursor: pointer; min-width: 0; }
+  .hcol .num { font-size: 11px; color: var(--muted); text-align: center; margin-bottom: 4px; font-variant-numeric: tabular-nums; min-height: 15px; }
+  .hcol .bar { border-radius: 5px 5px 2px 2px; background: color-mix(in srgb, var(--accent) 35%, var(--soft)); min-height: 3px; }
+  .hcol.peak .bar { background: var(--accent); }
+  .hcol .lab { font-size: 11px; color: var(--faint); text-align: center; margin-top: 6px; height: 15px; font-variant-numeric: tabular-nums; }
+  .hcol:hover .bar, .hcol:focus-visible .bar { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .hcol:focus-visible { outline: none; }
+  @media (max-width: 560px) {
+    .hours { gap: 2px; height: 160px; }
+    .hcol .num { display: none; }
+  }
+
+  /* Barra partida (nuevos vs recurrentes, plataforma) */
+  .split { display: flex; height: 12px; border-radius: 6px; overflow: hidden; background: var(--soft); margin: 4px 0 10px; }
+  .split i { display: block; height: 100%; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .legend i { width: 9px; height: 9px; border-radius: 2px; display: inline-block; }
+  .big { font-size: 22px; font-weight: 600; color: var(--text); font-variant-numeric: tabular-nums; }
+
+  /* Tablas (en vivo y actividad) */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; font-size: 11.5px; color: var(--faint); font-weight: 500; padding: 0 8px 8px; border-bottom: 1px solid var(--line); }
+  td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .mono { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+  .scroll-x { overflow-x: auto; }
+  details > summary { cursor: pointer; font-size: 13px; color: var(--muted); list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::before { content: '▸ '; }
+  details[open] > summary::before { content: '▾ '; }
+  .loading { opacity: .55; transition: opacity .15s; }
+  footer { margin-top: 26px; font-size: 12px; color: var(--faint); }
+
+  @media (max-width: 560px) {
+    .wrap { padding: 20px 16px 48px; }
+    .top { align-items: flex-start; }
+    .controls { width: 100%; }
+    .pills { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; width: 100%; }
+    .pills::-webkit-scrollbar { display: none; }
+    .pill { flex: none; padding: 6px 11px; }
+    #signOutBtn { position: absolute; top: 20px; right: 16px; }
+    .wrap { position: relative; }
+    .grid { grid-template-columns: minmax(0, 1fr); }
+    .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .kpi { padding: 12px 13px; }
+    .kpi .v { font-size: 23px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loginGate">
+  <h1>Panel de uso</h1>
+  <p>Acceso restringido a la cuenta admin de pokemontr.</p>
+  <label for="email">Email</label>
+  <input id="email" type="email" autocomplete="username">
+  <label for="password">Contraseña</label>
+  <input id="password" type="password" autocomplete="current-password">
+  <button id="loginBtn">Entrar</button>
+  <div id="loginError"></div>
+</div>
+
+<div class="wrap" id="dashboard">
+  <header class="top">
+    <div>
+      <h1>pokemontr · uso</h1>
+      <div class="live"><span class="live-dot"></span><span id="liveCount">—</span></div>
+    </div>
+    <div class="controls">
+      <nav class="pills" id="rangePills" aria-label="Periodo"></nav>
+      <button class="ghost" id="signOutBtn">Cerrar sesión</button>
+    </div>
+  </header>
+  <p class="range-note" id="rangeNote"></p>
+
+  <div id="periodBlock">
+    <section class="kpis" id="kpis"></section>
+
+    <section class="card">
+      <div class="card-head">
+        <div>
+          <h2 id="trendTitle">Personas activas</h2>
+          <div class="sub" id="trendSub"></div>
+        </div>
+        <div class="segs" id="trendSegs"></div>
+      </div>
+      <svg id="trend" role="img" aria-label="Evolución en el periodo"></svg>
+      <div class="readout" id="trendReadout">Pasa el ratón o toca un punto para ver el detalle.</div>
+    </section>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Qué hacen</h2>
+        <div class="sub">Personas que han entrado en cada zona de la app.</div>
+        <div class="rows" id="features"></div>
+      </section>
+      <section class="card">
+        <h2>Acciones</h2>
+        <div class="sub">Veces y personas distintas.</div>
+        <div class="rows" id="actions"></div>
+      </section>
+      <section class="card">
+        <h2>Quién vuelve</h2>
+        <div class="sub">De las personas activas, cuántas era su primera vez.</div>
+        <div id="newReturning"></div>
+      </section>
+      <section class="card">
+        <h2>Móvil</h2>
+        <div class="sub">Personas y sesiones por sistema. Quien ha usado los dos cuenta en ambos.</div>
+        <div id="platforms"></div>
+      </section>
+      <section class="card">
+        <h2>Versión de la app</h2>
+        <div class="sub">Última versión con la que entró cada persona.</div>
+        <div class="rows" id="versions"></div>
+      </section>
+      <section class="card">
+        <h2>Idioma y región</h2>
+        <div class="sub">Idioma del móvil, top 12.</div>
+        <div class="rows" id="locales"></div>
+      </section>
+      <section class="card wide">
+        <h2>A qué hora entran</h2>
+        <div class="sub" id="hoursSub">Personas distintas en cada hora del día, hora de España.</div>
+        <div class="hours" id="hours"></div>
+        <div class="readout" id="hoursReadout"></div>
+      </section>
+      <section class="card">
+        <h2>Cuánto se quedan</h2>
+        <div class="sub">Sesiones por duración.</div>
+        <div class="rows" id="durations"></div>
+      </section>
+      <section class="card">
+        <h2>Pantallas más vistas</h2>
+        <div class="sub">Top 15 por visitas.</div>
+        <div class="rows" id="screens"></div>
+      </section>
+      <section class="card">
+        <h2>Cómo inician sesión</h2>
+        <div class="sub">Inicios de sesión por método.</div>
+        <div class="rows" id="logins"></div>
+      </section>
+    </div>
+  </div>
+
+  <h2 class="section-title">Retención y embudo <span>· desde el principio, no dependen del periodo</span></h2>
+  <div class="grid">
+    <section class="card">
+      <h2>Embudo</h2>
+      <div class="sub">Alta → abrió la app → hizo algo de valor (añadir carta, post, trading demo o minijuego).</div>
+      <div class="rows" id="funnel"></div>
+    </section>
+    <section class="card">
+      <h2>Retención</h2>
+      <div class="sub">% de usuarios con antigüedad suficiente que ha vuelto en los últimos N días.</div>
+      <div class="cols" id="retention"></div>
+      <div class="readout" id="retentionReadout"></div>
+    </section>
+  </div>
+
+  <h2 class="section-title">En vivo</h2>
+  <div class="grid">
+    <section class="card">
+      <h2>Dentro ahora</h2>
+      <div class="sub">Actividad en los últimos 5 minutos.</div>
+      <div class="scroll-x"><table>
+        <thead><tr><th>Usuario</th><th>Desde</th><th>Móvil</th><th>Versión</th></tr></thead>
+        <tbody id="activeNowBody"><tr><td colspan="4" class="empty">Cargando…</td></tr></tbody>
+      </table></div>
+    </section>
+  </div>
+  <section class="card" style="margin-top:14px">
+    <details>
+      <summary>Últimos eventos y sesiones</summary>
+      <div class="grid" style="margin-top:12px">
+        <div class="scroll-x"><table>
+          <thead><tr><th>Usuario</th><th>Evento</th><th>Pantalla</th><th>Hora</th></tr></thead>
+          <tbody id="eventsBody"></tbody>
+        </table></div>
+        <div class="scroll-x"><table>
+          <thead><tr><th>Usuario</th><th>Inicio</th><th>Duración</th><th>Móvil</th></tr></thead>
+          <tbody id="sessionsBody"></tbody>
+        </table></div>
+      </div>
+    </details>
+  </section>
+
+  <footer>Datos en vivo de Supabase (app_sessions / app_events), sin cuentas de prueba. Periodos en hora de España.</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+  const SUPABASE_URL = 'https://wrjlcdbfdyzzfxfpuvyt.supabase.co';
+  const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndyamxjZGJmZHl6emZ4ZnB1dnl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM1Njg2MzMsImV4cCI6MjA4OTE0NDYzM30.8PgchQTtn4uo9q3DEPKEZpVizipbWevVK4_9bF5D3Os';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const loginGate = document.getElementById('loginGate');
+  const dashboard = document.getElementById('dashboard');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginError = document.getElementById('loginError');
+  const emailInput = document.getElementById('email');
+  const passwordInput = document.getElementById('password');
+  const $ = (id) => document.getElementById(id);
+
+  // ── Login y comprobación de admin ────────────────────────────────────────────
+  function showError(msg) { loginError.textContent = msg; loginError.style.display = 'block'; }
+
+  // Distintas versiones/errores de supabase-js usan message / error_description /
+  // msg según el caso; si no hay ninguno, mostramos algo más útil que "{}".
+  function describeError(e) {
+    const detail = e?.message || e?.error_description || e?.msg;
+    if (detail) return detail;
+    const status = e?.status || e?.code;
+    return status ? `Error ${status} al conectar con Supabase (ver consola).` : 'No se pudo iniciar sesión (ver consola del navegador).';
+  }
+
+  async function attemptLogin() {
+    loginBtn.disabled = true;
+    loginError.style.display = 'none';
+    try {
+      const { error } = await sb.auth.signInWithPassword({ email: emailInput.value.trim(), password: passwordInput.value });
+      if (error) throw error;
+      await afterAuth();
+    } catch (e) {
+      console.error('Login fallido:', e);
+      showError(describeError(e));
+    } finally {
+      loginBtn.disabled = false;
+    }
+  }
+  loginBtn.addEventListener('click', attemptLogin);
+  passwordInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') attemptLogin(); });
+
+  $('signOutBtn').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    dashboard.style.display = 'none';
+    loginGate.style.display = 'block';
+  });
+
+  async function afterAuth() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) return;
+    const { data: isAdmin, error } = await sb.rpc('is_app_admin');
+    if (error) { console.error('Fallo comprobando is_app_admin():', error); await sb.auth.signOut(); showError(describeError(error)); return; }
+    if (!isAdmin) { await sb.auth.signOut(); showError('Esta cuenta no tiene acceso al panel.'); return; }
+    loginGate.style.display = 'none';
+    dashboard.style.display = 'block';
+    startDashboard();
+  }
+  sb.auth.onAuthStateChange((_event, session) => { if (session) afterAuth(); });
+  afterAuth();
+
+  // ── Utilidades ───────────────────────────────────────────────────────────────
+  const nf = new Intl.NumberFormat('es-ES');
+  const fmt = (n) => (n == null ? '—' : nf.format(Math.round(n)));
+  function escapeHtml(str) {
+    return String(str ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+  function fmtDuration(seconds) {
+    if (seconds == null || !isFinite(seconds) || seconds < 0) return '—';
+    const m = Math.floor(seconds / 60), h = Math.floor(m / 60);
+    if (h > 0) return `${h} h ${m % 60} min`;
+    if (m > 0) return `${m} min ${Math.round(seconds % 60)} s`;
+    return `${Math.round(seconds)} s`;
+  }
+  function fmtDateTime(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+  const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+  const RANGES = [['hoy', 'Hoy'], ['ayer', 'Ayer'], ['7', '7 días'], ['30', '30 días'], ['90', '90 días'], ['max', 'Máx']];
+  const PREV_LABEL = { hoy: 'vs. ayer a esta hora', ayer: 'vs. anteayer', 7: 'vs. 7 días anteriores', 30: 'vs. 30 días anteriores', 90: 'vs. 90 días anteriores' };
+  const PLATFORM = { ios: 'iPhone', android: 'Android' };
+  const FEATURE_LABELS = {
+    escaner: 'Escáner', social: 'Social', mercado: 'Mercado', portfolio: 'Portfolio',
+    trading_demo: 'Trading demo', minijuegos: 'Minijuegos', mensajes: 'Mensajes',
+    perfil: 'Perfil', ai: 'IA', ranking: 'Ranking', notificaciones: 'Notificaciones', otros: 'Otros',
+  };
+  const ACTION_LABELS = { card_added: 'Cartas añadidas', game_finished: 'Minijuegos terminados', demo_trade: 'Operaciones trading demo', post_created: 'Posts' };
+  const LOGIN_LABELS = { google: 'Google', apple: 'Apple', email: 'Email', desconocido: 'Desconocido' };
+  const FUNNEL_LABELS = { alta: 'Se registró', abrio_la_app: 'Abrió la app', accion_de_valor: 'Hizo algo de valor' };
+
+  // es_ES → "español (España)". Si el navegador no sabe nombrarlo, se deja el código.
+  const localeNames = (() => { try { return new Intl.DisplayNames(['es'], { type: 'language' }); } catch (_) { return null; } })();
+  function localeLabel(code) {
+    if (!code || code === 'desconocido') return 'Desconocido';
+    try { return localeNames?.of(code.replace('_', '-')) || code; } catch (_) { return code; }
+  }
+
+  // Lectura al pulsar/enfocar cualquier elemento con data-detail + data-readout.
+  function showDetail(e) {
+    const item = e.target.closest('[data-detail]');
+    if (!item) return;
+    const out = $(item.dataset.readout);
+    if (out) out.innerHTML = item.dataset.detail;
+  }
+  document.addEventListener('click', showDetail);
+  document.addEventListener('focusin', showDetail);
+  document.addEventListener('mouseover', showDetail);
+
+  // Barras horizontales: [{ label, value, extra, color }]
+  function renderRows(el, rows, { max } = {}) {
+    if (!rows.length) { el.innerHTML = '<div class="empty">Sin datos en este periodo.</div>'; return; }
+    const top = max ?? Math.max(1, ...rows.map((r) => r.value));
+    el.innerHTML = rows.map((r) => `
+      <div class="row" title="${escapeHtml(r.title || `${r.label}: ${fmt(r.value)}`)}">
+        <span class="n">${escapeHtml(r.label)}</span>
+        <span class="t"><i style="width:${Math.max(1, (r.value / top) * 100)}%;${r.color ? `background:${r.color}` : ''}"></i></span>
+        <span class="v">${fmt(r.value)}</span>
+        <span class="x">${r.extra ? escapeHtml(r.extra) : ''}</span>
+      </div>`).join('');
+  }
+
+  // Barras verticales: [{ label, value, valueText, detail }]
+  function renderCols(el, rows, readoutId) {
+    if (!rows.length) { el.innerHTML = '<div class="empty">Sin datos en este periodo.</div>'; return; }
+    const top = Math.max(1, ...rows.map((r) => r.value));
+    el.innerHTML = rows.map((r) => `
+      <div class="col" tabindex="0" data-readout="${readoutId}" data-detail="${escapeHtml(r.detail)}">
+        <div class="val">${r.valueText ?? ''}</div>
+        <div class="bar" style="height:${r.value ? `max(2px, calc((100% - 34px) * ${(r.value / top).toFixed(4)}))` : '0'}"></div>
+        <div class="lab">${escapeHtml(r.label)}</div>
+      </div>`).join('');
+  }
+
+  // ── Estado ───────────────────────────────────────────────────────────────────
+  let range = '30';
+  try { const saved = localStorage.getItem('usageRange'); if (RANGES.some(([k]) => k === saved)) range = saved; } catch (_) {}
+  let trendMetric = 'activos';
+  let lastData = null;
+  let requestSeq = 0;
+
+  function renderPills() {
+    $('rangePills').innerHTML = RANGES.map(([k, l]) =>
+      `<button class="pill ${k === range ? 'on' : ''}" data-range="${k}" aria-pressed="${k === range}">${l}</button>`).join('');
+  }
+  $('rangePills').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-range]');
+    if (!b || b.dataset.range === range) return;
+    range = b.dataset.range;
+    try { localStorage.setItem('usageRange', range); } catch (_) {}
+    renderPills();
+    loadPeriod();
+  });
+
+  const TREND_METRICS = [['activos', 'Activos', 'Personas activas'], ['nuevos', 'Nuevos', 'Nuevos registros'], ['acciones', 'Acciones', 'Acciones']];
+  function renderSegs() {
+    $('trendSegs').innerHTML = TREND_METRICS.map(([k, l]) =>
+      `<button class="seg ${k === trendMetric ? 'on' : ''}" data-metric="${k}">${l}</button>`).join('');
+  }
+  $('trendSegs').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-metric]');
+    if (!b) return;
+    trendMetric = b.dataset.metric;
+    renderSegs();
+    if (lastData) renderTrend(lastData);
+  });
+
+  // ── Carga del periodo ────────────────────────────────────────────────────────
+  async function loadPeriod() {
+    const seq = ++requestSeq;
+    $('periodBlock').classList.add('loading');
+    const { data, error } = await sb.rpc('app_usage_dashboard', { p_range: range });
+    if (seq !== requestSeq) return; // el usuario ya ha cambiado de periodo
+    $('periodBlock').classList.remove('loading');
+    if (error) { console.error(error); $('rangeNote').textContent = `No se pudo cargar: ${describeError(error)}`; return; }
+    lastData = data;
+    renderPeriod(data);
+  }
+
+  function renderPeriod(d) {
+    const r = d.rango;
+    const opts = { day: 'numeric', month: 'short' };
+    const desde = new Date(r.desde), hasta = new Date(r.hasta);
+    $('rangeNote').textContent = range === 'max'
+      ? 'Todo el histórico.'
+      : r.por_hora
+        ? `${desde.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}${range === 'hoy' ? ', hasta ahora' : ''}.`
+        : `Del ${desde.toLocaleDateString('es-ES', opts)} al ${hasta.toLocaleDateString('es-ES', opts)}.`;
+
+    renderKpis(d.kpis, d.kpis_anterior);
+    renderTrend(d);
+
+    renderRows($('features'), (d.features || []).map((f) => ({
+      label: FEATURE_LABELS[f.feature] || f.feature, value: f.usuarios, extra: `${fmt(f.visitas)} visitas`,
+    })));
+
+    renderRows($('actions'), (d.acciones || []).map((a) => ({
+      label: ACTION_LABELS[a.name] || a.name, value: a.veces, extra: `${fmt(a.usuarios)} pers.`,
+    })));
+
+    const nr = d.nuevos_vs_recurrentes || { nuevos: 0, recurrentes: 0 };
+    const tot = nr.nuevos + nr.recurrentes;
+    $('newReturning').innerHTML = tot ? `
+      <div class="split"><i style="width:${(nr.nuevos / tot) * 100}%;background:var(--accent)"></i><i style="width:${(nr.recurrentes / tot) * 100}%;background:var(--faint)"></i></div>
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i><b class="big">${fmt(nr.nuevos)}</b>&nbsp;primera vez</span>
+        <span><i style="background:var(--faint)"></i><b class="big">${fmt(nr.recurrentes)}</b>&nbsp;ya venían</span>
+      </div>` : '<div class="empty">Sin datos en este periodo.</div>';
+
+    const plats = d.plataformas || [];
+    const pTot = plats.reduce((s, p) => s + p.usuarios, 0);
+    $('platforms').innerHTML = pTot ? `
+      <div class="split">${plats.map((p) => `<i style="width:${(p.usuarios / pTot) * 100}%;background:var(--${p.platform === 'ios' ? 'ios' : 'android'})"></i>`).join('')}</div>
+      <div class="legend">${plats.map((p) => `
+        <span><i style="background:var(--${p.platform === 'ios' ? 'ios' : 'android'})"></i><b class="big">${fmt(p.usuarios)}</b>&nbsp;${escapeHtml(PLATFORM[p.platform] || p.platform)} · ${fmt(p.sesiones)} sesiones</span>`).join('')}
+      </div>` : '<div class="empty">Sin datos en este periodo.</div>';
+
+    renderRows($('versions'), (d.versiones || []).map((v) => ({
+      label: `${v.version} · ${PLATFORM[v.platform] || v.platform || '—'}`, value: v.usuarios,
+      color: `var(--${v.platform === 'ios' ? 'ios' : 'android'})`,
+    })));
+
+    renderRows($('locales'), (d.idiomas || []).map((l) => ({
+      label: localeLabel(l.locale), value: l.usuarios, title: `${localeLabel(l.locale)} (${l.locale}): ${l.usuarios}`,
+    })));
+
+    renderHours(d.horas || []);
+
+    renderRows($('durations'), (d.duraciones || []).map((x) => ({ label: x.tramo, value: x.sesiones })));
+    renderRows($('screens'), (d.pantallas || []).map((s) => ({ label: s.screen_name, value: s.visitas, extra: `${fmt(s.usuarios)} pers.` })));
+    renderRows($('logins'), (d.login || []).map((l) => ({ label: LOGIN_LABELS[l.metodo] || l.metodo, value: l.veces })));
+  }
+
+  // Personas distintas por hora (no eventos: una sola persona añadiendo 200
+  // cartas de golpe dispararía su hora). Las 3 horas con más gente, resaltadas.
+  function renderHours(horas) {
+    const byHour = new Map(horas.map((h) => [h.hora, h]));
+    const rows = Array.from({ length: 24 }, (_, h) => ({ h, ...(byHour.get(h) || { eventos: 0, usuarios: 0 }) }));
+    const top = Math.max(1, ...rows.map((r) => r.usuarios));
+    const hh = (h) => `${String(h).padStart(2, '0')}:00`;
+    if (!rows.some((r) => r.usuarios)) {
+      $('hours').innerHTML = '<div class="empty" style="grid-column:1/-1">Sin datos en este periodo.</div>';
+      $('hoursSub').textContent = 'Personas distintas en cada hora del día, hora de España.';
+      $('hoursReadout').textContent = '';
+      return;
+    }
+    const peaks = [...rows].filter((r) => r.usuarios).sort((a, b) => b.usuarios - a.usuarios).slice(0, 3).map((r) => r.h);
+    $('hours').innerHTML = rows.map((r) => `
+      <div class="hcol ${peaks.includes(r.h) ? 'peak' : ''}" tabindex="0" data-readout="hoursReadout"
+           data-detail="${escapeHtml(`<b>${hh(r.h)}–${String(r.h).padStart(2, '0')}:59</b> · ${fmt(r.usuarios)} ${r.usuarios === 1 ? 'persona' : 'personas'} · ${fmt(r.eventos)} eventos`)}">
+        <div class="num">${r.usuarios || ''}</div>
+        <div class="bar" style="height:${r.usuarios ? `max(3px, calc((100% - 40px) * ${(r.usuarios / top).toFixed(4)}))` : '3px'}${r.usuarios ? '' : ';opacity:.35'}"></div>
+        <div class="lab">${r.h % 3 === 0 ? r.h : ''}</div>
+      </div>`).join('');
+    $('hoursSub').textContent = `Personas distintas en cada hora, hora de España. Más gente a las ${peaks.sort((a, b) => a - b).map(hh).join(', ')}.`;
+    $('hoursReadout').textContent = 'Pasa el ratón o toca una hora para ver el detalle.';
+  }
+
+  function renderKpis(k, prev) {
+    const items = [
+      ['activos', 'Personas activas', fmt],
+      ['nuevos', 'Nuevos registros', fmt],
+      ['sesiones', 'Sesiones', fmt],
+      ['duracion_media_seg', 'Tiempo medio por sesión', fmtDuration],
+      ['cartas', 'Cartas añadidas', fmt],
+      ['minijuegos', 'Minijuegos terminados', fmt],
+    ];
+    $('kpis').innerHTML = items.map(([key, label, f]) => {
+      let delta = '<div class="d">&nbsp;</div>';
+      if (range === 'max') delta = '<div class="d">desde el inicio</div>';
+      else if (!prev) delta = '<div class="d">sin datos del periodo anterior</div>';
+      else if (prev[key] != null && k[key] != null) {
+        const a = k[key], b = prev[key];
+        const diff = a - b;
+        let txt;
+        if (key === 'duracion_media_seg') txt = `${diff >= 0 ? '+' : '−'}${fmtDuration(Math.abs(diff))}`;
+        else if (b > 0 && range !== 'hoy' && range !== 'ayer') txt = `${diff >= 0 ? '+' : '−'}${Math.abs(Math.round((diff / b) * 100))}%`;
+        else txt = `${diff >= 0 ? '+' : '−'}${fmt(Math.abs(diff))}`;
+        const cls = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
+        delta = `<div class="d ${cls}">${diff === 0 ? 'igual' : txt} ${PREV_LABEL[range]}</div>`;
+      }
+      return `<div class="kpi"><div class="l">${label}</div><div class="v">${f(k[key])}</div>${delta}</div>`;
+    }).join('');
+  }
+
+  // Línea + área del periodo. Horas (hoy/ayer) o días.
+  function renderTrend(d) {
+    const serie = d.serie || [];
+    const porHora = d.rango.por_hora;
+    const label = TREND_METRICS.find(([k]) => k === trendMetric)[2];
+    $('trendTitle').textContent = `${label} por ${porHora ? 'hora' : 'día'}`;
+    const total = serie.reduce((s, p) => s + p[trendMetric], 0);
+    $('trendSub').textContent = trendMetric === 'activos'
+      ? `Personas distintas en cada ${porHora ? 'hora' : 'día'}.`
+      : `${fmt(total)} en total en el periodo.`;
+    $('trendReadout').textContent = 'Pasa el ratón o toca un punto para ver el detalle.';
+
+    const svg = $('trend');
+    if (!serie.length) { svg.innerHTML = ''; $('trendReadout').textContent = 'Sin datos en este periodo.'; return; }
+    const W = Math.max(svg.clientWidth || 640, 300), H = 220;
+    const pad = { t: 14, r: 10, b: 24, l: 34 };
+    const iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+    const vals = serie.map((p) => p[trendMetric]);
+    const max = Math.max(1, ...vals);
+    const step = serie.length > 1 ? iw / (serie.length - 1) : 0;
+    const x = (i) => pad.l + (serie.length > 1 ? i * step : iw / 2);
+    const y = (v) => pad.t + ih - (v / max) * ih;
+    const pts = vals.map((v, i) => [x(i), y(v)]);
+    const line = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ');
+    const base = (pad.t + ih).toFixed(1);
+    const area = `${line} L${pts[pts.length - 1][0].toFixed(1)} ${base} L${pts[0][0].toFixed(1)} ${base} Z`;
+    const accent = css('--accent'), line2 = css('--line'), faint = css('--faint'), card = css('--card');
+
+    const fmtCubo = (c, long) => {
+      const dt = new Date(c);
+      if (porHora) return `${String(dt.getHours()).padStart(2, '0')}:00`;
+      return dt.toLocaleDateString('es-ES', long ? { weekday: 'short', day: 'numeric', month: 'long' } : { day: 'numeric', month: 'short' });
+    };
+    // Unas 6 etiquetas en el eje X, repartidas.
+    const every = Math.max(1, Math.ceil(serie.length / 6));
+    const xLabels = serie.map((p, i) => (i % every === 0 || i === serie.length - 1) && !(i !== serie.length - 1 && serie.length - 1 - i < every)
+      ? `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="${i === 0 ? 'start' : i === serie.length - 1 ? 'end' : 'middle'}" font-size="10.5" fill="${faint}">${escapeHtml(fmtCubo(p.cubo))}</text>` : '').join('');
+    const grid = [0, 0.5, 1].map((f) => {
+      const v = Math.round(max * f), yy = y(v).toFixed(1);
+      return `<line x1="${pad.l}" x2="${W - pad.r}" y1="${yy}" y2="${yy}" stroke="${line2}" stroke-width="1"/>
+              <text x="${pad.l - 8}" y="${(+yy + 3.5).toFixed(1)}" text-anchor="end" font-size="10.5" fill="${faint}">${fmt(v)}</text>`;
+    }).join('');
+    const hitW = Math.max(6, step || iw);
+    const hits = serie.map((p, i) => {
+      const detail = `<b>${escapeHtml(fmtCubo(p.cubo, true))}</b> · ${fmt(p.activos)} activos · ${fmt(p.nuevos)} nuevos · ${fmt(p.acciones)} acciones`;
+      return `<rect class="hit" tabindex="0" x="${(x(i) - hitW / 2).toFixed(1)}" y="${pad.t}" width="${hitW.toFixed(1)}" height="${ih}"
+                data-readout="trendReadout" data-detail="${escapeHtml(detail)}"></rect>
+              <circle class="dot" cx="${pts[i][0].toFixed(1)}" cy="${pts[i][1].toFixed(1)}" r="4.5" fill="${accent}" stroke="${card}" stroke-width="2" pointer-events="none"></circle>`;
+    }).join('');
+
+    svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    svg.innerHTML = `${grid}
+      <path d="${area}" fill="${accent}" opacity="0.12"/>
+      <path d="${line}" fill="none" stroke="${accent}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+      ${xLabels}${hits}`;
+  }
+
+  // ── Retención y embudo (no dependen del periodo) ─────────────────────────────
+  async function loadRetention() {
+    const [{ data: funnel, error: e1 }, { data: ret, error: e2 }] = await Promise.all([
+      sb.from('app_conversion_funnel').select('*').order('orden'),
+      sb.from('app_retention_curve').select('*').order('dias'),
+    ]);
+    if (e1) console.error(e1); if (e2) console.error(e2);
+    renderRows($('funnel'), (funnel || []).map((f) => ({
+      label: FUNNEL_LABELS[f.etapa] || f.etapa, value: f.usuarios, extra: `${f.pct_del_alta}%`,
+    })));
+    renderCols($('retention'), (ret || []).map((r) => ({
+      label: `D${r.dias}`, value: Number(r.pct_retenidos) || 0, valueText: `${r.pct_retenidos}%`,
+      detail: `<b>${r.dias} días</b> · ${r.pct_retenidos}% han vuelto (${fmt(r.retained_users)} de ${fmt(r.eligible_users)})`,
+    })), 'retentionReadout');
+  }
+
+  // ── En vivo ──────────────────────────────────────────────────────────────────
+  let usernameCache = new Map();
+  async function resolveUsernames(ids) {
+    const missing = [...new Set(ids)].filter((id) => id && !usernameCache.has(id));
+    if (!missing.length) return;
+    const { data, error } = await sb.from('users').select('id, username').in('id', missing);
+    if (error) { console.error(error); return; }
+    for (const row of data) usernameCache.set(row.id, row.username || row.id.slice(0, 8));
+    for (const id of missing) if (!usernameCache.has(id)) usernameCache.set(id, id.slice(0, 8));
+  }
+  const nameFor = (id) => escapeHtml(usernameCache.get(id) || id?.slice(0, 8) || '—');
+
+  // Cuentas de prueba: fuera de todos los totales (ya filtradas en SQL); en las
+  // tablas de detalle se siguen viendo, marcadas, para poder auditarlas.
+  let testAccountIds = new Set();
+  async function loadTestAccountIds() {
+    const { data, error } = await sb.from('app_test_accounts').select('user_id');
+    if (error) { console.error(error); return; }
+    testAccountIds = new Set((data || []).map((r) => r.user_id));
+  }
+  const testBadge = (id) => (testAccountIds.has(id) ? ' <span class="mono">(prueba)</span>' : '');
+
+  async function loadLive() {
+    const [{ data: now }, { data: events }, { data: sessions }] = await Promise.all([
+      sb.from('app_sessions_active_now').select('*').order('last_seen_at', { ascending: false }),
+      sb.from('app_events').select('user_id, name, screen_name, created_at').order('created_at', { ascending: false }).limit(40),
+      sb.from('app_sessions').select('user_id, started_at, last_seen_at, ended_at, platform').order('started_at', { ascending: false }).limit(40),
+    ]);
+    const n = (now || []).length;
+    $('liveCount').textContent = n === 0 ? 'Nadie dentro ahora mismo' : n === 1 ? '1 persona dentro ahora' : `${n} personas dentro ahora`;
+    $('activeNowBody').innerHTML = n ? now.map((s) => `
+      <tr><td>${escapeHtml(s.username || s.user_id.slice(0, 8))}</td><td>${fmtDateTime(s.started_at)}</td>
+      <td>${escapeHtml(PLATFORM[s.platform] || s.platform || '—')}</td><td class="mono">${escapeHtml(s.app_version || '—')}</td></tr>`).join('')
+      : '<tr><td colspan="4" class="empty">Nadie dentro ahora mismo.</td></tr>';
+
+    await resolveUsernames([...(events || []), ...(sessions || [])].map((x) => x.user_id));
+    $('eventsBody').innerHTML = (events || []).map((e) => `
+      <tr><td>${nameFor(e.user_id)}${testBadge(e.user_id)}</td><td class="mono">${escapeHtml(e.name)}</td>
+      <td class="mono">${escapeHtml(e.screen_name || '—')}</td><td>${fmtDateTime(e.created_at)}</td></tr>`).join('');
+    $('sessionsBody').innerHTML = (sessions || []).map((s) => {
+      const dur = (new Date(s.ended_at || s.last_seen_at) - new Date(s.started_at)) / 1000;
+      return `<tr><td>${nameFor(s.user_id)}${testBadge(s.user_id)}</td><td>${fmtDateTime(s.started_at)}</td>
+        <td>${fmtDuration(dur)}</td><td>${escapeHtml(PLATFORM[s.platform] || s.platform || '—')}</td></tr>`;
+    }).join('');
+  }
+
+  // ── Orquestación ─────────────────────────────────────────────────────────────
+  let liveTimer = null;
+  function scheduleLive() { clearTimeout(liveTimer); liveTimer = setTimeout(loadLive, 1000); } // agrupa ráfagas
+
+  let dashboardStarted = false;
+  async function startDashboard() {
+    if (dashboardStarted) return;
+    dashboardStarted = true;
+    renderPills();
+    renderSegs();
+    await loadTestAccountIds();
+    loadPeriod();
+    loadRetention();
+    loadLive();
+    setInterval(loadPeriod, 60000); // el periodo se recalcula cada minuto
+    setInterval(loadLive, 30000);
+    window.addEventListener('resize', () => { if (lastData) renderTrend(lastData); });
+    sb.channel('usage-dashboard')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_sessions' }, scheduleLive)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'app_events' }, scheduleLive)
+      .subscribe();
+  }
+</script>
+</body>
+</html>
