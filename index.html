@@ -310,11 +310,11 @@
   <h2 class="section-title">En vivo</h2>
   <div class="grid">
     <section class="card">
-      <h2>Dentro ahora</h2>
-      <div class="sub">Actividad en los últimos 5 minutos.</div>
+      <h2>Activos en la última media hora</h2>
+      <div class="sub">Personas con actividad en los últimos 30 minutos, una vez cada una.</div>
       <div class="scroll-x"><table>
-        <thead><tr><th>Usuario</th><th>Desde</th><th>Móvil</th><th>Versión</th></tr></thead>
-        <tbody id="activeNowBody"><tr><td colspan="4" class="empty">Cargando…</td></tr></tbody>
+        <thead><tr><th>Usuario</th><th>Desde</th><th>Visto</th><th>Móvil</th><th>Versión</th></tr></thead>
+        <tbody id="activeNowBody"><tr><td colspan="5" class="empty">Cargando…</td></tr></tbody>
       </table></div>
     </section>
   </div>
@@ -794,11 +794,11 @@
       sb.from('app_sessions').select('user_id, started_at, last_seen_at, ended_at, platform').order('started_at', { ascending: false }).limit(40),
     ]);
     const n = (now || []).length;
-    $('liveCount').textContent = n === 0 ? 'Nadie dentro ahora mismo' : n === 1 ? '1 persona dentro ahora' : `${n} personas dentro ahora`;
+    $('liveCount').textContent = n === 0 ? 'Nadie en la última media hora' : n === 1 ? '1 persona activa en la última media hora' : `${n} personas activas en la última media hora`;
     $('activeNowBody').innerHTML = n ? now.map((s) => `
-      <tr><td>${escapeHtml(s.username || s.user_id.slice(0, 8))}</td><td>${fmtDateTime(s.started_at)}</td>
+      <tr><td>${escapeHtml(s.username || s.user_id.slice(0, 8))}</td><td>${fmtDateTime(s.started_at)}</td><td>${fmtDateTime(s.last_seen_at)}</td>
       <td>${escapeHtml(PLATFORM[s.platform] || s.platform || '—')}</td><td class="mono">${escapeHtml(s.app_version || '—')}</td></tr>`).join('')
-      : '<tr><td colspan="4" class="empty">Nadie dentro ahora mismo.</td></tr>';
+      : '<tr><td colspan="5" class="empty">Nadie en la última media hora.</td></tr>';
 
     await resolveUsernames([...(events || []), ...(sessions || [])].map((x) => x.user_id));
     $('eventsBody').innerHTML = (events || []).map((e) => `
