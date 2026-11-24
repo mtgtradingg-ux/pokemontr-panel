@@ -195,6 +195,36 @@
   <div id="periodBlock">
     <section class="kpis" id="kpis"></section>
 
+    <h2 class="section-title">Cuánta gente entra en cada zona <span>· personas distintas en el periodo</span></h2>
+    <section class="kpis" id="zones" style="margin-top:10px"></section>
+
+    <h2 class="section-title">Asesor (Porigon) <span>· solo cuentas con sesión; la web sin cuenta, aparte</span></h2>
+    <section class="kpis" id="advisorKpis" style="margin-top:10px"></section>
+    <div class="grid" style="margin-top:0;margin-bottom:14px">
+      <section class="card">
+        <h2>Quién pregunta</h2>
+        <div class="sub">De quienes han preguntado en el periodo, cuántos lo hacían por primera vez.</div>
+        <div id="advisorNewReturning"></div>
+      </section>
+      <section class="card">
+        <h2>Vuelven al asesor</h2>
+        <div class="sub">% que volvió a preguntar N días o más después de su primera pregunta. Desde el principio.</div>
+        <div class="cols" id="advisorReturn"></div>
+        <div class="readout" id="advisorReturnReadout"></div>
+      </section>
+      <section class="card">
+        <h2>Planes ahora</h2>
+        <div class="sub" id="plansSub">Pro y Max vigentes. «A mano» = puesto sin pago.</div>
+        <div class="rows" id="plans"></div>
+        <div class="readout" id="plansReadout"></div>
+      </section>
+      <section class="card">
+        <h2>Límite y web sin cuenta</h2>
+        <div class="sub">Quién se queda sin asesor y cuánto se usa sin iniciar sesión.</div>
+        <div class="rows" id="advisorLimits"></div>
+      </section>
+    </div>
+
     <section class="card">
       <div class="card-head">
         <div>
@@ -393,9 +423,12 @@
   const PLATFORM = { ios: 'iPhone', android: 'Android' };
   const FEATURE_LABELS = {
     escaner: 'Escáner', social: 'Social', mercado: 'Mercado', portfolio: 'Portfolio',
-    trading_demo: 'Trading demo', minijuegos: 'Minijuegos', mensajes: 'Mensajes',
-    perfil: 'Perfil', ai: 'IA', ranking: 'Ranking', notificaciones: 'Notificaciones', otros: 'Otros',
+    trading_demo: 'Demo', minijuegos: 'Minijuegos', mensajes: 'Mensajes',
+    perfil: 'Perfil', ai: 'IA', asesor: 'Asesor (Inicio)', perfiles_ajenos: 'Perfiles de otros',
+    buscador: 'Buscador', ranking: 'Ranking', notificaciones: 'Notificaciones', otros: 'Otros',
   };
+  // Las zonas que se siguen de cerca, en este orden, arriba del todo.
+  const ZONES = ['asesor', 'portfolio', 'trading_demo', 'mercado', 'perfil', 'mensajes'];
   const ACTION_LABELS = { card_added: 'Cartas añadidas', game_finished: 'Minijuegos terminados', demo_trade: 'Operaciones trading demo', post_created: 'Posts' };
   const LOGIN_LABELS = { google: 'Google', apple: 'Apple', email: 'Email', desconocido: 'Desconocido' };
   const FUNNEL_LABELS = { alta: 'Se registró', abrio_la_app: 'Abrió la app', accion_de_valor: 'Hizo algo de valor' };
@@ -463,7 +496,10 @@
     loadPeriod();
   });
 
-  const TREND_METRICS = [['activos', 'Activos', 'Personas activas'], ['nuevos', 'Nuevos', 'Nuevos registros'], ['acciones', 'Acciones', 'Acciones']];
+  const TREND_METRICS = [
+    ['activos', 'Activos', 'Personas activas'], ['nuevos', 'Nuevos', 'Nuevos registros'], ['acciones', 'Acciones', 'Acciones'],
+    ['asesor', 'Asesor', 'Personas que preguntan al asesor'], ['preguntas', 'Preguntas', 'Preguntas al asesor'],
+  ];
   function renderSegs() {
     $('trendSegs').innerHTML = TREND_METRICS.map(([k, l]) =>
       `<button class="seg ${k === trendMetric ? 'on' : ''}" data-metric="${k}">${l}</button>`).join('');
@@ -499,6 +535,8 @@
         : `Del ${desde.toLocaleDateString('es-ES', opts)} al ${hasta.toLocaleDateString('es-ES', opts)}.`;
 
     renderKpis(d.kpis, d.kpis_anterior);
+    renderZones(d.features || [], d.features_anterior);
+    renderAdvisor(d);
     renderTrend(d);
 
     renderRows($('features'), (d.features || []).map((f) => ({
@@ -568,15 +606,75 @@
   }
 
   function renderKpis(k, prev) {
-    const items = [
+    kpiTiles($('kpis'), [
       ['activos', 'Personas activas', fmt],
       ['nuevos', 'Nuevos registros', fmt],
       ['sesiones', 'Sesiones', fmt],
       ['duracion_media_seg', 'Tiempo medio por sesión', fmtDuration],
       ['cartas', 'Cartas añadidas', fmt],
       ['demo', 'Personas en la demo', fmt],
-    ];
-    $('kpis').innerHTML = items.map(([key, label, f]) => {
+    ], k, prev);
+  }
+
+  // Personas por zona, con su comparación. Las de ZONES aunque tengan 0.
+  function renderZones(features, prevFeatures) {
+    const toObj = (arr) => Object.fromEntries((arr || []).map((f) => [f.feature, f.usuarios]));
+    const visitas = Object.fromEntries(features.map((f) => [f.feature, f.visitas]));
+    const k = toObj(features), prev = prevFeatures ? toObj(prevFeatures) : null;
+    for (const z of ZONES) { k[z] ??= 0; if (prev) prev[z] ??= 0; }
+    kpiTiles($('zones'), ZONES.map((z) => [z, FEATURE_LABELS[z], fmt, `${fmt(visitas[z] || 0)} visitas`]), k, prev);
+  }
+
+  function renderAdvisor(d) {
+    const a = d.asesor || {}, ap = d.asesor_anterior;
+    kpiTiles($('advisorKpis'), [
+      ['personas', 'Personas que preguntan', fmt],
+      ['preguntas', 'Preguntas', fmt],
+      ['conversaciones', 'Conversaciones nuevas', fmt],
+      ['preguntas_por_persona', 'Preguntas por persona', (n) => (n == null ? '—' : String(n).replace('.', ','))],
+      ['limite_personas', 'Llegan al límite', fmt, 'personas · se apunta desde el 24 nov'],
+      ['altas_pago', 'Compras Pro / Max', fmt],
+    ], a, ap);
+
+    const tot = (a.primera_vez || 0) + (a.ya_venian || 0);
+    $('advisorNewReturning').innerHTML = tot ? `
+      <div class="split"><i style="width:${(a.primera_vez / tot) * 100}%;background:var(--accent)"></i><i style="width:${(a.ya_venian / tot) * 100}%;background:var(--faint)"></i></div>
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i><b class="big">${fmt(a.primera_vez)}</b>&nbsp;primera vez</span>
+        <span><i style="background:var(--faint)"></i><b class="big">${fmt(a.ya_venian)}</b>&nbsp;ya habían preguntado</span>
+      </div>` : '<div class="empty">Nadie ha preguntado en este periodo.</div>';
+
+    const p = d.planes || {};
+    renderCols($('advisorReturn'), (p.vuelven || []).map((r) => {
+      const pct = r.base ? Math.round((r.vuelven / r.base) * 100) : 0;
+      return {
+        label: `D${r.dias}`, value: pct, valueText: r.base ? `${pct}%` : '—',
+        detail: r.base
+          ? `<b>${r.dias} días o más</b> · ${pct}% volvió (${fmt(r.vuelven)} de ${fmt(r.base)} que empezaron hace ${r.dias}+ días)`
+          : `<b>${r.dias} días</b> · aún nadie empezó hace tanto`,
+      };
+    }), 'advisorReturnReadout');
+
+    renderRows($('plans'), (p.planes || []).map((x) => ({
+      label: `${x.name} · ${String(x.price_eur).replace('.', ',')} €`, value: x.pagando,
+      extra: x.a_mano ? `+${fmt(x.a_mano)} a mano` : '',
+    })));
+    const conv = p.han_usado_asesor ? Math.round((p.pagando / p.han_usado_asesor) * 1000) / 10 : null;
+    $('plansReadout').innerHTML = `<b>${nf.format(Number(p.ingresos_mes || 0))} € al mes</b> · ${fmt(p.pagando)} pagando de ${fmt(p.han_usado_asesor)} que han usado el asesor${conv == null ? '' : ` (${String(conv).replace('.', ',')}%)`}`;
+
+    renderRows($('advisorLimits'), [
+      { label: 'Llegan al límite', value: a.limite_personas || 0, extra: `${fmt(a.limite_veces)} veces` },
+      { label: 'Tope global', value: a.limite_global || 0, extra: 'veces' },
+      { label: 'Sin cuenta (web)', value: a.sin_cuenta_personas || 0, extra: `pers. · ${fmt(a.sin_cuenta_preguntas)} preg.` },
+      { label: 'Sin cuenta: agotan', value: a.limite_sin_cuenta || 0, extra: 'pers.' },
+    ], {});
+  }
+
+  // Fichas con cifra y comparación con el periodo anterior:
+  // items = [[clave, etiqueta, formato, pie opcional]].
+  function kpiTiles(el, items, k, prev) {
+    k = k || {};
+    el.innerHTML = items.map(([key, label, f, foot]) => {
       let delta = '<div class="d">&nbsp;</div>';
       if (range === 'max') delta = '<div class="d">desde el inicio</div>';
       else if (!prev) delta = '<div class="d">sin datos del periodo anterior</div>';
@@ -590,7 +688,7 @@
         const cls = diff > 0 ? 'up' : diff < 0 ? 'down' : '';
         delta = `<div class="d ${cls}">${diff === 0 ? 'igual' : txt} ${PREV_LABEL[range]}</div>`;
       }
-      return `<div class="kpi"><div class="l">${label}</div><div class="v">${f(k[key])}</div>${delta}</div>`;
+      return `<div class="kpi"><div class="l">${escapeHtml(label)}</div><div class="v">${f(k[key])}</div>${delta}${foot ? `<div class="d">${escapeHtml(foot)}</div>` : ''}</div>`;
     }).join('');
   }
 
@@ -601,7 +699,7 @@
     const label = TREND_METRICS.find(([k]) => k === trendMetric)[2];
     $('trendTitle').textContent = `${label} por ${porHora ? 'hora' : 'día'}`;
     const total = serie.reduce((s, p) => s + p[trendMetric], 0);
-    $('trendSub').textContent = trendMetric === 'activos'
+    $('trendSub').textContent = trendMetric === 'activos' || trendMetric === 'asesor'
       ? `Personas distintas en cada ${porHora ? 'hora' : 'día'}.`
       : `${fmt(total)} en total en el periodo.`;
     $('trendReadout').textContent = 'Pasa el ratón o toca un punto para ver el detalle.';
@@ -638,7 +736,7 @@
     }).join('');
     const hitW = Math.max(6, step || iw);
     const hits = serie.map((p, i) => {
-      const detail = `<b>${escapeHtml(fmtCubo(p.cubo, true))}</b> · ${fmt(p.activos)} activos · ${fmt(p.nuevos)} nuevos · ${fmt(p.acciones)} acciones`;
+      const detail = `<b>${escapeHtml(fmtCubo(p.cubo, true))}</b> · ${fmt(p.activos)} activos · ${fmt(p.nuevos)} nuevos · ${fmt(p.acciones)} acciones · ${fmt(p.asesor)} en el asesor · ${fmt(p.preguntas)} preguntas`;
       return `<rect class="hit" tabindex="0" x="${(x(i) - hitW / 2).toFixed(1)}" y="${pad.t}" width="${hitW.toFixed(1)}" height="${ih}"
                 data-readout="trendReadout" data-detail="${escapeHtml(detail)}"></rect>
               <circle class="dot" cx="${pts[i][0].toFixed(1)}" cy="${pts[i][1].toFixed(1)}" r="4.5" fill="${accent}" stroke="${card}" stroke-width="2" pointer-events="none"></circle>`;
